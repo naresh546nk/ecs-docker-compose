@@ -13,8 +13,9 @@ phases:
     commands:
       - echo "changing the directory"
       - ls
-      - cd /ECS
+      - cd ECS
       - ls
+      - docker context ls
 #   post_build:
 #     commands:
 #       - echo "Taging Docker Images and pushing to ECR"
