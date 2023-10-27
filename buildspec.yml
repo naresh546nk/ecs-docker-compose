@@ -5,6 +5,10 @@ env:
     DOCKERHUB_TOKEN: dckr_pat_e5UVxPAPz1V5s1dMthMIb6yZXgM
     DOCKERHUM_USER: naresh546
 phases:
+  install:
+    commands:
+      - mv /usr/local/bin/docker /usr/bin/docker
+      - curl -L https://raw.githubusercontent.com/docker/compose-cli/main/scripts/install/install_linux.sh | sh
   pre_build:
     commands:
       #Docker Hub login
@@ -16,7 +20,7 @@ phases:
       - ls
       - docker context ls
       - echo "createing myecs context of type ecs"
-      - docker context create ecs demoecs --from-env
+      - docker context create ecs demoecs
       - echo "changing the context"
       - docker context use demoecs
       - echo "checking the selected context"
