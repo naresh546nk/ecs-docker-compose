@@ -1,154 +1,236 @@
 version: "3.8"
-
 services:
-  grafana:
-    image: grafana/grafana:latest
+  mongodb:
+    container_name: mongodb
+    image: mongo:6-jammy
     ports:
-      - "3000:3000"
-    environment:
-     - GF_SECURITY_ADMIN_USER=admin
-     - GF_SECURITY_ADMIN_PASSWORD=admin
-    networks:
-     - banking
-    depends_on:
-     - prometheus
-
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
+      - '27017:27017'
     volumes:
-     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - mongo-volume:/data/db
     networks:
-     - banking
+     - blogsite
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://logstash:12201"
 
-  zipkin:
-    image: openzipkin/zipkin
-    mem_limit: 700m
-    ports:
-      - "9411:9411"
-    networks:
-     - banking
+  # database-mysql:
+  #   image: mysql
+  #   container_name: database-mysql
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: root
+  #     MYSQL_DATABASE: blogsite   
+  #     MYSQL_USER: admin
+  #     MYSQL_PASSWORD: root
+  #   ports:
+  #     - 3306:3306
+  #   volumes:
+  #    - mysql-volume:/var/lib/mysql
+  #   networks:
+  #    - blogsite
+  # axonserver:
+  #   container_name: axonserver
+  #   image: axoniq/axonserver
+  #   # hostname: axonserver
+  #   volumes:
+  #     - axonserver-data:/data
+  #     - axonserver-events:/eventdata
+  #     - axonserver-config:/config:ro
+  #   ports:
+  #     - '8024:8024'
+  #     - '8124:8124'
+  #     # - '8224:8224'
+  #   networks:
+  #     - blogsite
 
-  configserver:
-    image: naresh546/banking-config:0.0.13-SNAPSHOT
-    mem_limit: 700m
-    ports:
-      - "8100:8100"
-    networks:
-     - banking
-    environment:
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+  # eurekaserver:
+  #   container_name: eurekaserver
+  #   image: naresh546/blogsite-eurekaserver:dev 
+  #   ports:
+  #     - "8761:8761"
+  #   networks:
+  #     - blogsite
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: dev
+
+  # configserver:
+  #   container_name: configserver
+  #   image: naresh546/blogsite-config-server:dev
+  #   ports:
+  #    - "8100:8100"
+  #   networks:
+  #    - blogsite
+  #   depends_on:
+  #    - eurekaserver
+  #   environment:
+  #     # SPRING_PROFILES_ACTIVE: default
+  #     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
 
 
-  eurekaserver:
-    image: naresh546/eurekaserver:0.0.13-SNAPSHOT
-    mem_limit: 700m
-    ports:
-      - "8761:8761"
-    networks:
-      - banking
-    depends_on:
-      - configserver
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 15s
-        max_attempts: 3
-        window: 120s
-    environment:
-      SPRING_PROFILES_ACTIVE: default
-      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
-      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
-
-  accounts:
-    image: naresh546/accounts:0.0.13-SNAPSHOT
-    mem_limit: 700m
-    ports:
-      - "8081:8081"
-    networks:
-      - banking
-    depends_on:
-      - configserver
-      - eurekaserver
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 30s
-        max_attempts: 3
-        window: 120s
-    environment:
-      SPRING_PROFILES_ACTIVE: default
-      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
-      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
-  
-  loans:
-    image: naresh546/loans:0.0.13-SNAPSHOT
-    mem_limit: 700m
-    ports:
-      - "8083:8083"
-    networks:
-      - banking
-    depends_on:
-      - configserver
-      - eurekaserver
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 30s
-        max_attempts: 3
-        window: 120s
-    environment:
-      SPRING_PROFILES_ACTIVE: default
-      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
-      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
-    
-  cards:
-    image: naresh546/cards:0.0.13-SNAPSHOT
-    mem_limit: 700m
-    ports:
-      - "8082:8082"
-    networks:
-      - banking
-    depends_on:
-      - configserver
-      - eurekaserver
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 30s
-        max_attempts: 3
-        window: 120s
-    environment:
-      SPRING_PROFILES_ACTIVE: default
-      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
-      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
-
-  api-gateway:
-    image: naresh546/api-gateway:0.0.13-SNAPSHOT
-    mem_limit: 700m
-    ports:
-      - "9000:9000"
-    networks:
-      - banking
-    depends_on:
-      - configserver
-      - eurekaserver
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 30s
-        max_attempts: 3
-        window: 120s
-    environment:
-      SPRING_PROFILES_ACTIVE: default
-      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
-      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
+  # apigateway:
+  #   container_name: apigateway
+  #   image: naresh546/blogsite-apigateway:aws1
+  #   ports:
+  #    - "9000:9000"
+  #   networks:
+  #    - blogsite
+  #   depends_on:
+  #    - eurekaserver
+  #    - configserver
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: aws
+  #     SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+  #     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
       
+  # user:
+  #   container_name: user
+  #   image: naresh546/blogsite-user:dev
+  #   ports:
+  #     - "8000:8000"
+  #   networks:
+  #     - blogsite
+  #   depends_on:
+  #     - configserver
+  #     - database-mysql
+  #     - axonserver
+  #     - eurekaserver
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: dev
+  #     SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+  #     AXON_AXONSERVER_SERVERS: axonserver:8124
+  #     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+  # user-replica:
+  #   container_name: user-replica
+  #   image: naresh546/blogsite-user-replica:dev 
+  #   ports:
+  #     - "8001:8001"
+  #   networks:
+  #     - blogsite
+  #   depends_on:
+  #     - configserver
+  #     - axonserver
+  #     - eurekaserver
+  #     - mongodb
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: dev
+  #     SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/blogReadDb
+  #     SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+  #     AXON_AXONSERVER_SERVERS: axonserver:8124
+  #     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+  # blog:
+  #   container_name: blog
+  #   image: naresh546/blogsite-blog:dev
+  #   ports:
+  #     - "8010:8010"
+  #   networks:
+  #     - blogsite
+  #   depends_on:
+  #     - configserver
+  #     - database-mysql
+  #     - axonserver
+  #     - eurekaserver
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: dev
+  #     SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+  #     AXON_AXONSERVER_SERVERS: axonserver:8124
+  #     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+
+  # blog-replica:
+  #   container_name: blog-replica
+  #   image: naresh546/blogsite-blog-replica:dev
+  #   ports:
+  #     - "8011:8011"
+  #   networks:
+  #     - blogsite
+  #   depends_on:
+  #     - configserver
+  #     - mongodb
+  #     - axonserver
+  #     - eurekaserver
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: dev
+  #     USER_REPLICA_URI: http://user-replica:8001/api/v1.0/blogsite/users/
+  #     SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/blogReadDb
+  #     SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+  #     AXON_AXONSERVER_SERVERS: axonserver:8124
+  #     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+# ELK configuration 
+  elasticsearch:
+    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.1.1
+    environment: 
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    networks: 
+      - logging-network
+
+  logstash:
+    container_name: logstash
+    image: docker.elastic.co/logstash/logstash:7.1.1
+    depends_on: 
+      - elasticsearch
+    ports:
+      - 12201:12201/udp
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro 
+    networks:
+      - logging-network
+
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:7.1.1
+    depends_on:
+      - logstash
+    ports: 
+      - 5601:5601
+    networks: 
+      - logging-network
+
+
+  # blogui:
+  #   container_name: blogui
+  #   image: naresh546/blog-site-ui:aws
+  #   ports:
+  #     - "80:80"
+  #   networks:
+  #     - blogsite
+  #   depends_on:
+  #     - apigateway
+
+
+
+
+#volumes and networks
+volumes:
+  axonserver-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/data
+      o: bind
+  axonserver-events:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/events
+      o: bind
+  axonserver-config:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/config
+      o: bind      
+volumes:
+  mysql-volume:
+  axonserver-data:
+  axonserver-events:
+  axonserver-config:
+  mongo-volume:
 networks:
-  banking:
+  blogsite:
+  logging-network:
+    driver: bridge

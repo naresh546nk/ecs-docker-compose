@@ -199,10 +199,10 @@ services:
         window: 120s
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017
-      #SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/blogReadDb
+      # SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
       AXON_AXONSERVER_SERVERS: axonserver:8124
-      # EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: eurekaserver:8761/eureka/
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://host.docker.internal:8761/eureka/
 
   blog:
     container_name: blog

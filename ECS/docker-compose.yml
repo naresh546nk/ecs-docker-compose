@@ -1,5 +1,4 @@
 version: "3.8"
-
 services:
   mongodb:
     container_name: mongodb
@@ -28,7 +27,7 @@ services:
   axonserver:
     container_name: axonserver
     image: axoniq/axonserver
-    hostname: axonserver
+    # hostname: axonserver
     volumes:
       - axonserver-data:/data
       - axonserver-events:/eventdata
@@ -36,13 +35,13 @@ services:
     ports:
       - '8024:8024'
       - '8124:8124'
-      - '8224:8224'
+      # - '8224:8224'
     networks:
       - blogsite
 
   eurekaserver:
     container_name: eurekaserver
-    image: naresh546/blogsite-eurekaserver:latest 
+    image: naresh546/blogsite-eurekaserver:dev 
     ports:
       - "8761:8761"
     networks:
@@ -52,7 +51,7 @@ services:
 
   configserver:
     container_name: configserver
-    image: naresh546/blogsite-config-server:latest
+    image: naresh546/blogsite-config-server:dev
     ports:
      - "8100:8100"
     networks:
@@ -60,101 +59,111 @@ services:
     depends_on:
      - eurekaserver
     environment:
-      SPRING_PROFILES_ACTIVE: default
+      # SPRING_PROFILES_ACTIVE: default
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
 
 
   apigateway:
     container_name: apigateway
-    image: naresh546/blogsite-apigateway:dev
-    mem_limit: 700m
+    image: naresh546/blogsite-apigateway:aws1
     ports:
      - "9000:9000"
     networks:
      - blogsite
     depends_on:
      - eurekaserver
+     - configserver
     environment:
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: aws
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
       
-  # user:
-  #   container_name: user
-  #   image: naresh546/blogsite-user:latest
+  user:
+    container_name: user
+    image: naresh546/blogsite-user:dev
+    ports:
+      - "8000:8000"
+    networks:
+      - blogsite
+    depends_on:
+      - configserver
+      - database-mysql
+      - axonserver
+      - eurekaserver
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+      AXON_AXONSERVER_SERVERS: axonserver:8124
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+  user-replica:
+    container_name: user-replica
+    image: naresh546/blogsite-user-replica:dev 
+    ports:
+      - "8001:8001"
+    networks:
+      - blogsite
+    depends_on:
+      - configserver
+      - axonserver
+      - eurekaserver
+      - mongodb
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/blogReadDb
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+      AXON_AXONSERVER_SERVERS: axonserver:8124
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+  blog:
+    container_name: blog
+    image: naresh546/blogsite-blog:dev
+    ports:
+      - "8010:8010"
+    networks:
+      - blogsite
+    depends_on:
+      - configserver
+      - database-mysql
+      - axonserver
+      - eurekaserver
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+      AXON_AXONSERVER_SERVERS: axonserver:8124
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+
+  blog-replica:
+    container_name: blog-replica
+    image: naresh546/blogsite-blog-replica:dev
+    ports:
+      - "8011:8011"
+    networks:
+      - blogsite
+    depends_on:
+      - configserver
+      - mongodb
+      - axonserver
+      - eurekaserver
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      USER_REPLICA_URI: http://user-replica:8001/api/v1.0/blogsite/users/
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/blogReadDb
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+      AXON_AXONSERVER_SERVERS: axonserver:8124
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+
+  # blogui:
+  #   container_name: blogui
+  #   image: naresh546/blog-site-ui:aws
   #   ports:
-  #     - "8000:8000"
+  #     - "80:80"
   #   networks:
   #     - blogsite
   #   depends_on:
-  #     - configserver
-  #     - database-mysql
-  #     - axonserver
-  #     - eurekaserver
-  #   environment:
-  #     SPRING_PROFILES_ACTIVE: dev
-  #     #SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
-  #     AXON_AXONSERVER_SERVERS: axonserver:8124
-  #     # EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: eurekaserver:8761/eureka/
-
-  # user-replica:
-  #   container_name: user-replica
-  #   image: naresh546/blogsite-user-replica:latest 
-  #   ports:
-  #     - "8001:8001"
-  #   networks:
-  #     - blogsite
-  #   depends_on:
-  #     - configserver
-  #     - axonserver
-  #     - eurekaserver
-  #     - mongodb
-  #   environment:
-  #     SPRING_PROFILES_ACTIVE: dev
-  #     SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017
-  #     #SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
-  #     AXON_AXONSERVER_SERVERS: axonserver:8124
-  #     # EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: eurekaserver:8761/eureka/
-
-  # blog:
-  #   container_name: blog
-  #   image: naresh546/blogsite-blog:latest
-  #   ports:
-  #     - "8010:8010"
-  #   networks:
-  #     - blogsite
-  #   depends_on:
-  #     - configserver
-  #     - database-mysql
-  #     - axonserver
-  #     - eurekaserver
-  #   environment:
-  #     SPRING_PROFILES_ACTIVE: dev
-  #     # SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
-  #     # AXON_AXONSERVER_SERVERS: axonserver:8124
-  #     # EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
-
-
-  # blog-replica:
-  #   container_name: blog-replica
-  #   image: naresh546/blogsite-blog-replica:latest
-  #   ports:
-  #     - "8011:8011"
-  #   networks:
-  #     - blogsite
-  #   depends_on:
-  #     - configserver
-  #     - mongodb
-  #     - axonserver
-  #     - eurekaserver
-  #   environment:
-  #     SPRING_PROFILES_ACTIVE: dev
-  #     SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017
-  #     # SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
-  #     # AXON_AXONSERVER_SERVERS: axonserver:8124
-  #     # EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
-
-
-
+  #     - apigateway
 
 
 
