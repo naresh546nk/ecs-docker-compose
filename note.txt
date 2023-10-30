@@ -1,11 +1,207 @@
-Running docker on cloudshell
+prerequisit:
+=====================
+$ aws --version
+aws-cli/1.29.72 Python/3.8.10 Windows/10 botocore/1.31.72
 
-===========================
+$ docker --version
+Docker version 20.10.23, build 7155243
 
-sudo yum update -y
+==================
+Configure aws cli 
+aws Configure
+
+=================
+set the docker context 
+ docker context ls
+NAME                TYPE                DESCRIPTION                               DOCKER ENDPOINT                     
+        KUBERNETES ENDPOINT                                                                   ORCHESTRATOR
+default *           moby                Current DOCKER_HOST based configuration   npipe:////./pipe/docker_engine              https://DF7745C9FDD9A03A39C0F424C61F213A.gr7.ap-south-1.eks.amazonaws.com (default)   swarm
+desktop-linux       moby                                                          npipe:////./pipe/dockerDesktopLinuxEngine
+myecs               ecs                                                                                               
 
 
-sudo amazon-linux-extras install docker
+In your case you will only see the default context and * will indicate that your context is pointing to default context
 
---To start docker  container
-sudo dockerd
+Create new context :
+---------------
+$ docker context create ecs ecscontext
+? Create a Docker context using: An existing AWS profile
+? Select AWS Profile default
+Successfully created ecs context "ecscontext"
+
+change context 
+-------------       
+$ docker context use ecscontext
+ecscontext
+Current context is now "ecscontext"
+       
+$ docker context ls
+NAME                TYPE                DESCRIPTION                               DOCKER ENDPOINT                     
+        KUBERNETES ENDPOINT                                                                   ORCHESTRATOR
+default             moby                Current DOCKER_HOST based configuration   npipe:////./pipe/docker_engine              https://DF7745C9FDD9A03A39C0F424C61F213A.gr7.ap-south-1.eks.amazonaws.com (default)   swarm
+desktop-linux       moby                                                          npipe:////./pipe/dockerDesktopLinuxEngine
+ecscontext *        ecs                                                                                               
+
+myecs               ecs                                                                                               
+
+Now you can see * is poing to ecscontext. setup is done let start deploying to ecs cluster.
+
+=========================================================
+$ pwd
+/e/Practics/EAccedamy-project/ecs-compose/ecs-docker-compose/ECS
+
+My docker compose file is there 
+
+$ docker compose up  (there must be space b/w docker and compose)
+AxonserverconfigAccessPoint                              CreateComplete                5.0s 
+ - EurekaserverTCP8761TargetGroup                           CreateComplete               24.5s 
+ - BlogsiteNetwork                                          CreateCo...                   6.2s 
+ - EurekaserverTaskExecutionRole                            CreateComplete               19.2s 
+ - UserTaskExecutionRole                                    Cr...                        20.3s 
+ - BlogTaskExecutionRole                                    Cr...                        20.3s 
+ - UserreplicaTCP8001TargetGroup                            CreateComplete               24.5s 
+ - AxonserverTCP8024TargetGroup                             CreateComplete               25.5s 
+ - BlogreplicaTCP8011TargetGroup                            CreateComplete               18.2s 
+ - BlogTCP8010TargetGroup                                   C...                         17.1s 
+ - DatabasemysqlTCP3306TargetGroup                          CreateComplete               24.5s 
+ - UserTCP8000TargetGroup                                   C...                         24.5s 
+ - AxonserverTaskExecutionRole                              CreateComplete               20.3s 
+ - MongovolumeAccessPoint                                   C...                          8.2s 
+ - CloudMap                                                 CreateComplete               47.3s 
+ - BlogreplicaTaskExecutionRole                             CreateComplete               20.3s 
+ - DatabasemysqlTaskExecutionRole                           CreateComplete               20.3s 
+ - AxonservereventsAccessPoint                              CreateComplete                5.0s 
+ - AxonserverTCP8124TargetGroup                             CreateComplete               24.5s 
+ - AxonserverdataNFSMountTargetOnSubnet0af9e60c2e4fd5bff    CreateComplete               78.3s 
+ - Blogsite8000Ingress                                      Crea...                       1.0s 
+ - MysqlvolumeNFSMountTargetOnSubnet0734a83bb8d7d7299       CreateComplete               83.1s 
+ - AxonserverconfigNFSMountTargetOnSubnet0fd4835d206e5ee22  CreateComplete               83.1s 
+ - MysqlvolumeNFSMountTargetOnSubnet0af9e60c2e4fd5bff       CreateComplete               83.1s 
+ - Blogsite8124Ingress                                      Crea...                       1.0s 
+ - MysqlvolumeNFSMountTargetOnSubnet0fd4835d206e5ee22       CreateComplete               83.1s 
+ - AxonserverdataNFSMountTargetOnSubnet0734a83bb8d7d7299    CreateComplete               83.1s 
+ - Blogsite8001Ingress                                      Crea...                       1.0s 
+ - AxonservereventsNFSMountTargetOnSubnet0af9e60c2e4fd5bff  CreateComplete               83.1s 
+ - MongovolumeNFSMountTargetOnSubnet0fd4835d206e5ee22       CreateComplete               79.8s 
+ - Blogsite9000Ingress                                      Crea...                       1.0s 
+ - AxonservereventsNFSMountTargetOnSubnet0fd4835d206e5ee22  CreateComplete               84.6s 
+ - AxonserverconfigNFSMountTargetOnSubnet0af9e60c2e4fd5bff  CreateComplete               84.6s 
+ - Blogsite8024Ingress                                      Crea...                       1.0s 
+ - Blogsite8100Ingress                                      Crea...                       1.0s 
+ - Blogsite3306Ingress                                      Crea...                       1.0s 
+ - Blogsite8011Ingress                                      Crea...                       1.0s 
+ - MongovolumeNFSMountTargetOnSubnet0af9e60c2e4fd5bff       CreateComplete               83.1s 
+ - AxonservereventsNFSMountTargetOnSubnet0734a83bb8d7d7299  CreateComplete               83.1s 
+ - Blogsite27017Ingress                                     Cre...                        1.0s 
+ - AxonserverconfigNFSMountTargetOnSubnet0734a83bb8d7d7299  CreateComplete               83.1s 
+ - AxonserverdataNFSMountTargetOnSubnet0fd4835d206e5ee22    CreateComplete               83.1s 
+ - MongovolumeNFSMountTargetOnSubnet0734a83bb8d7d7299       CreateComplete               83.1s 
+ - BlogsiteNetworkIngress                                   C...                          1.0s 
+ - Blogsite8010Ingress                                      Crea...                       1.0s 
+ - Blogsite8761Ingress                                      Crea...                       1.0s 
+ - MongodbTaskRole                                          CreateCo...                  21.4s 
+ - AxonserverTaskRole                                       Creat...                     20.6s 
+ - DatabasemysqlTaskRole                                    Cr...                        19.4s 
+ - ConfigserverTaskDefinition                               CreateComplete                2.1s 
+ - ApigatewayTaskDefinition                                 CreateComplete                1.0s 
+ - UserreplicaTaskDefinition                                CreateComplete                8.0s 
+ - EurekaserverTaskDefinition                               CreateComplete                2.1s 
+ - UserTaskDefinition                                       Creat...                      2.1s 
+ - BlogreplicaTaskDefinition                                CreateComplete                8.0s 
+ - BlogTaskDefinition                                       Creat...                      6.8s 
+ - MongodbTaskDefinition                                    Cr...                         2.5s 
+ - DatabasemysqlTaskDefinition                              CreateComplete                3.1s 
+ - AxonserverTaskDefinition                                 CreateComplete                3.1s 
+ - EurekaserverServiceDiscoveryEntry                        CreateComplete                1.4s 
+ - ConfigserverServiceDiscoveryEntry                        CreateComplete                1.4s 
+ - DatabasemysqlServiceDiscoveryEntry                       CreateComplete               10.0s 
+ - MongodbServiceDiscoveryEntry                             CreateComplete               10.0s 
+ - UserreplicaServiceDiscoveryEntry                         CreateComplete                1.4s 
+ - UserServiceDiscoveryEntry                                CreateComplete               10.0s 
+ - BlogreplicaServiceDiscoveryEntry                         CreateComplete                1.4s 
+ - BlogServiceDiscoveryEntry                                CreateComplete               10.0s 
+ - ApigatewayServiceDiscoveryEntry                          CreateComplete                1.4s 
+ - AxonserverServiceDiscoveryEntry                          CreateComplete               10.0s 
+ - UserTCP8000Listener                                      Crea...                       0.0s 
+ - MongodbTCP27017Listener                                  CreateComplete                5.3s 
+ - BlogTCP8010Listener                                      Crea...                       5.3s 
+ - ConfigserverTCP8100Listener                              CreateComplete                5.3s 
+ - BlogreplicaTCP8011Listener                               CreateComplete                5.3s 
+ - DatabasemysqlTCP3306Listener                             CreateComplete                5.3s 
+ - ApigatewayTCP9000Listener                                CreateComplete                0.0s
+[+] Running 95/988001Listener                               CreateComplete                5.3s 
+ - ecs                                                      CreateInProgress Use...     462.0s 
+ - ApigatewayTaskExecutionRole                              CreateComplete               19.2s 
+ - LogGroup                                                 CreateComplete                0.9s 
+ - UserreplicaTaskExecutionRole                             CreateComplete               19.2s 
+ - ConfigserverTaskExecutionRole                            CreateComplete               19.2s 
+ - MongodbTaskExecutionRole                                 CreateComplete               19.2s 
+ - ConfigserverTCP8100TargetGroup                           CreateComplete               17.1s 
+ - MysqlvolumeAccessPoint                                   C...                          9.2s 
+ - ApigatewayTCP9000TargetGroup                             CreateComplete               17.1s
+ - Cluster                                                  CreateComplete                5.0s 
+ - AxonserverdataAccessPoint                                CreateComplete                9.2s 
+ - LoadBalancer                                             CreateCompl...              153.6s 
+ - MongodbTCP27017TargetGroup                               CreateComplete               18.2s 
+ - AxonserverconfigAccessPoint                              CreateComplete                5.0s 
+ - EurekaserverTCP8761TargetGroup                           CreateComplete               24.5s 
+ - BlogsiteNetwork                                          CreateCo...                   6.2s 
+ - EurekaserverTaskExecutionRole                            CreateComplete               19.2s 
+ - UserTaskExecutionRole                                    Cr...                        20.3s 
+ - BlogTaskExecutionRole                                    Cr...                        20.3s 
+ - UserreplicaTCP8001TargetGroup                            CreateComplete               24.5s 
+ - AxonserverTCP8024TargetGroup                             CreateComplete               25.5s 
+ - BlogreplicaTCP8011TargetGroup                            CreateComplete               18.2s 
+ - BlogTCP8010TargetGroup                                   C...                         17.1s 
+ - DatabasemysqlTCP3306TargetGroup                          CreateComplete               24.5s 
+ - UserTCP8000TargetGroup                                   C...                         24.5s 
+ - AxonserverTaskExecutionRole                              CreateComplete               20.3s 
+ - MongovolumeAccessPoint                                   C...                          8.2s 
+ - CloudMap                                                 CreateComplete               47.3s 
+ - BlogreplicaTaskExecutionRole                             CreateComplete               20.3s 
+ - DatabasemysqlTaskExecutionRole                           CreateComplete               20.3s 
+ - AxonservereventsAccessPoint                              CreateComplete                5.0s 
+ - AxonserverTCP8124TargetGroup                             CreateComplete               24.5s 
+ - AxonserverdataNFSMountTargetOnSubnet0af9e60c2e4fd5bff    CreateComplete               78.3s 
+ ......
+ .......
+ ......
+ ......
+
+No you can got to aws console and check below things.
+- CloudFormation
+- security LogGroup
+- LoadBalancer
+- 1Listener
+- ecs cluster
+- ecs service 
+- task definition 
+you will see all the serices will be created automatically
+
+Once all the service pass the health check you can hit LoadBalancer url with port number to check the services 
+
+example :
+http://ecs-LoadBala-lCGvL6kGxI8Y-d1985bb2948918ad.elb.ap-south-1.amazonaws.com:9000/api/v1.0/blogsite/users/add
+
+At 9000 spring cloud apigateway is running. so am directly hitting the service.
+all the request will go through api gateway where i have implemented security.
+
+
+=====================================
+Now you can update LoadBalancer url to fronted application. then create docker image and again deploy using docker compose 
+
+For fronted i am using port 80 so that it will creat application LoadBalancer rather then network LoadBalancer
+
+=========================================
+CODE BASE:
+-----------
+Backend code: https://github.com/naresh546nk/Blog-backend-project-cqrs
+
+fronted code: https://github.com/naresh546nk/blog-ui
+
+ecs deployment code: https://github.com/naresh546nk/ecs-docker-compose
+
+
+
+
+
