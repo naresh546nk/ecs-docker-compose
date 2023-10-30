@@ -201,6 +201,8 @@ fronted code: https://github.com/naresh546nk/blog-ui
 
 ecs deployment code: https://github.com/naresh546nk/ecs-docker-compose
 
+external configuration: https://github.com/naresh546nk/blog-config
+
 
 
 
