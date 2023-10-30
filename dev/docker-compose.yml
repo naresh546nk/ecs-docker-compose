@@ -1,0 +1,223 @@
+version: "3.8"
+
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongo:6-jammy
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-volume:/data/db
+    networks:
+     - blogsite
+
+
+  database-mysql:
+    image: mysql
+    container_name: database-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: blogsite   
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: root
+    ports:
+      - 3306:3306
+    volumes:
+     - mysql-volume:/var/lib/mysql
+    networks:
+     - blogsite
+
+  axonserver:
+    image: axoniq/axonserver
+    hostname: axonserver
+    volumes:
+      - axonserver-data:/data
+      - axonserver-events:/eventdata
+      - axonserver-config:/config:ro
+    ports:
+      - '8024:8024'
+      - '8124:8124'
+      - '8224:8224'
+    networks:
+      - blogsite
+
+  eurekaserver:
+    container_name: eurekaserver
+    image: naresh546/blogsite-eurekaserver:dev 
+    mem_limit: 700m
+    ports:
+      - "8761:8761"
+    networks:
+      - blogsite
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 15s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+
+  configserver:
+    container_name: configserver
+    image: naresh546/blogsite-config-server:dev
+    mem_limit: 700m
+    ports:
+     - "8100:8100"
+    networks:
+     - blogsite
+    depends_on:
+     - eurekaserver
+    environment:
+      # SPRING_PROFILES_ACTIVE: dev
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+
+  apigateway:
+    container_name: apigateway
+    image: naresh546/blogsite-apigateway:aws
+    mem_limit: 700m
+    ports:
+     - "9000:9000"
+    networks:
+     - blogsite
+    depends_on:
+     - eurekaserver
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+      
+  user:
+    container_name: user
+    image: naresh546/blogsite-user:dev
+    mem_limit: 700m
+    ports:
+      - "8000:8000"
+    networks:
+      - blogsite
+    depends_on:
+      - configserver
+      - database-mysql
+      - axonserver
+      - eurekaserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+      AXON_AXONSERVER_SERVERS: axonserver:8124
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+  user-replica:
+    container_name: user-replica
+    image: naresh546/blogsite-user-replica:dev 
+    mem_limit: 700m
+    ports:
+      - "8001:8001"
+    networks:
+      - blogsite
+    depends_on:
+      - configserver
+      - axonserver
+      - eurekaserver
+      - mongodb
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/blogReadDb
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+      AXON_AXONSERVER_SERVERS: axonserver:8124
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+  blog:
+    container_name: blog
+    image: naresh546/blogsite-blog:dev
+    mem_limit: 700m
+    ports:
+      - "8010:8010"
+    networks:
+      - blogsite
+    depends_on:
+      - configserver
+      - database-mysql
+      - axonserver
+      - eurekaserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+      AXON_AXONSERVER_SERVERS: axonserver:8124
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+
+  blog-replica:
+    container_name: blog-replica
+    image: naresh546/blogsite-blog-replica:dev
+    mem_limit: 700m
+    ports:
+      - "8011:8011"
+    networks:
+      - blogsite
+    depends_on:
+      - configserver
+      - mongodb
+      - axonserver
+      - eurekaserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/blogReadDb
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8100/
+      AXON_AXONSERVER_SERVERS: axonserver:8124
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8761/eureka/
+
+
+
+
+#volumes and networks
+volumes:
+  axonserver-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/data
+      o: bind
+  axonserver-events:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/events
+      o: bind
+  axonserver-config:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/config
+      o: bind      
+volumes:
+  mysql-volume:
+  axonserver-data:
+  axonserver-events:
+  axonserver-config:
+  mongo-volume:
+networks:
+  blogsite:
