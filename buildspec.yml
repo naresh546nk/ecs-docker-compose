@@ -22,7 +22,7 @@ phases:
       - echo "createing myecs context of type ecs"
       - docker context create ecs demoecs
       - echo "changing the context"
-      - docker context use demoecs
+      - docker context use demoecs --from-env
       - echo "checking the selected context"
       - docker context ls
 #   post_build:
